@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>정비 수리 완료 알림</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background-color: #fff;
+      color: #000;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      width: 100%;
+      text-align: center;
+      padding: 25px 0;
+      background-color: #fff;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 3em;
+      color: #0066cc;
+      margin: 0;
+    }
+
+    .top-controls {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .icon-button {
+      font-size: 1.4em;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #0066cc;
+    }
+
+    .icon-button:hover {
+      color: #003399;
+    }
+
+    #repeatSelect {
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 5px;
+      background-color: #eee;
+    }
+
+    #display {
+      text-align: center;
+      word-break: break-word;
+      white-space: pre-line;
+      padding: 10px;
+      margin-top: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    #carLine {
+      font-weight: bold;
+      font-size: 5vw;
+      color: #003399;
+      margin-bottom: 10px;
+    }
+
+    #textLine {
+      font-size: 4.5vw;
+    }
+
+    .input-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      padding: 10px 10px 20px;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+
+    .input-fields {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-fields input,
+    .input-fields textarea {
+      font-size: 1.1em;
+      padding: 10px;
+      border: 1px solid #aaa;
+      background: #eee;
+      color: #000;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .input-wrapper button {
+      padding: 12px 20px;
+      font-size: 1.1em;
+      height: 100%;
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .input-wrapper button:hover {
+      background-color: #004c99;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2em;
+      }
+      .input-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .input-wrapper button {
+        width: 100%;
+      }
+      .top-controls {
+        top: 10px;
+        right: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>정비 수리 완료 알림</h1>
+    <div class="top-controls">
+      <select id="repeatSelect" title="음성 반복 횟수 설정">
+        <option value="1">🔁 1회</option>
+        <option value="2" selected>🔁 2회</option>
+        <option value="3">🔁 3회</option>
+      </select>
+      <button class="icon-button" id="stopButton" title="음성 중단">⏹️</button>
+    </div>
+  </header>
+
+  <div id="display">
+    <div id="carLine">차량번호</div>
+    <div id="textLine">텍스트를 입력하세요</div>
+  </div>
+
+  <div class="input-wrapper" id="inputWrapper">
+    <div class="input-fields">
+      <input type="text" id="carNumber" placeholder="차량번호 입력" />
+      <textarea id="inputText" placeholder="정비 내용을 입력하세요 (줄바꿈 가능)" rows="3"></textarea>
+    </div>
+    <button id="submitBtn">입력</button>
+  </div>
+
+  <script>
+    const carNumberInput = document.getElementById('carNumber');
+    const textInput = document.getElementById('inputText');
+    const carLine = document.getElementById('carLine');
+    const textLine = document.getElementById('textLine');
+    const submitBtn = document.getElementById('submitBtn');
+    const repeatSelect = document.getElementById('repeatSelect');
+    const stopButton = document.getElementById('stopButton');
+
+    function getKoreanMaleVoice() {
+      const voices = speechSynthesis.getVoices();
+      return voices.find(v => v.lang.startsWith('ko') && v.name.toLowerCase().includes('male')) ||
+             voices.find(v => v.lang.startsWith('ko') && v.name.toLowerCase().includes('man')) ||
+             voices.find(v => v.lang.startsWith('ko'));
+    }
+
+    function speakText(text, repeat = 2) {
+      if (!text.trim()) return;
+      const voice = getKoreanMaleVoice();
+      for (let i = 0; i < repeat; i++) {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ko-KR';
+        if (voice) utter.voice = voice;
+        speechSynthesis.speak(utter);
+      }
+    }
+
+    function submitMessage() {
+      const carNum = carNumberInput.value.trim();
+      const rawContent = textInput.value.trim();
+      const repeatCount = parseInt(repeatSelect.value, 10);
+
+      if (rawContent) {
+        carLine.textContent = carNum || '';
+        textLine.innerHTML = rawContent.replace(/\n/g, '<br>');
+
+        const fullText = (carNum ? `[${carNum}] ` : '') + rawContent.replace(/\n/g, ' ');
+        speakText(fullText, repeatCount);
+
+        textInput.value = '';
+      }
+    }
+
+    submitBtn.addEventListener('click', submitMessage);
+
+    stopButton.addEventListener('click', () => {
+      speechSynthesis.cancel();
+    });
+
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => {};
+    }
+  </script>
+
+</body>
+</html>
